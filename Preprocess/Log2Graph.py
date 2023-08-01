@@ -207,43 +207,51 @@ class AuditdEvent:
             return None
         # Resources 
         for _record in self.records:
-            _type = _record.type
-            _keys = _record.data_dict.keys()
-            _data_dict = _record.data_dict
-            
-            if _type == "EXECVE":
-                for i_arg in range(int(_data_dict['argc'])):
-                    _arg = _data_dict[f'a{i_arg}']
-                    # Process arguments
-                    if _arg[0] == "\"" and _arg[-1] == "\"":
-                        _arg = _arg[1:-1]
-                    
-                    if _arg[0] == "\\":
-                        i_file = _add_node(nodetype="File",arg_dict={"path":_arg}, timestamp=_ts)
-                        _add_edge(i_a=i_process,i_b=i_file,edgetype=None,arg_dict={"syscall":_syscall},timestamp=_ts)
-                    
-            
-            # Socket
-            if _type == "SOCKADDR":
-                _saddr = _data_dict['saddr']
+            try:
+                _type = _record.type
+                _keys = _record.data_dict.keys()
+                _data_dict = _record.data_dict
+                
+                if _type == "EXECVE":
+                    for i_arg in range(int(_data_dict['argc'])):
+                        _arg = _data_dict[f'a{i_arg}']
+                        if len(_arg) == 0:
+                            continue
+                        # Process arguments
+                        if _arg[0] == "\"" and _arg[-1] == "\"":
+                            _arg = _arg[1:-1]
 
-                i_socket = _add_node(nodetype="Socket",arg_dict={"saddr":_saddr}, timestamp=_ts)
-                _add_edge(i_a=i_process,i_b=i_socket,edgetype=None,arg_dict={"syscall":_syscall},timestamp=_ts)
+                        if len(_arg) == 0:
+                            continue
+                        
+                        if _arg[0] == "/":
+                            i_file = _add_node(nodetype="File",arg_dict={"path":_arg}, timestamp=_ts)
+                            _add_edge(i_a=i_process,i_b=i_file,edgetype=None,arg_dict={"syscall":_syscall},timestamp=_ts)
+                        
+                
+                # Socket
+                if _type == "SOCKADDR":
+                    _saddr = _data_dict['saddr']
+
+                    i_socket = _add_node(nodetype="Socket",arg_dict={"saddr":_saddr}, timestamp=_ts)
+                    _add_edge(i_a=i_process,i_b=i_socket,edgetype=None,arg_dict={"syscall":_syscall},timestamp=_ts)
 
 
-            # File
-            if _type == "PATH":
-                _path = _data_dict['name']
+                # File
+                if _type == "PATH":
+                    _path = _data_dict['name']
 
-                i_file = _add_node(nodetype="File",arg_dict={"path":_path}, timestamp=_ts)
-                _add_edge(i_a=i_process,i_b=i_file,edgetype=None,arg_dict={"syscall":_syscall},timestamp=_ts)
-            
-            if _type == "CWD":
-                _path = _data_dict['cwd']
+                    i_file = _add_node(nodetype="File",arg_dict={"path":_path}, timestamp=_ts)
+                    _add_edge(i_a=i_process,i_b=i_file,edgetype=None,arg_dict={"syscall":_syscall},timestamp=_ts)
+                
+                if _type == "CWD":
+                    _path = _data_dict['cwd']
 
-                i_file = _add_node(nodetype="File",arg_dict={"path":_path}, timestamp=_ts)
-                _add_edge(i_a=i_process,i_b=i_file,edgetype=None,arg_dict={"syscall":_syscall},timestamp=_ts)
-
+                    i_file = _add_node(nodetype="File",arg_dict={"path":_path}, timestamp=_ts)
+                    _add_edge(i_a=i_process,i_b=i_file,edgetype=None,arg_dict={"syscall":_syscall},timestamp=_ts)
+            except:
+                print(_record.data)
+                raise
             # Other USer
             # elif 'uid' in _keys:
             #     __uid = _data_dict['uid']
@@ -276,7 +284,9 @@ def _read_log(log_file_path):
 
 def log2graph(input_path, output_path, interval=60, overlap=30):
     auditd_record_list = _read_log(input_path)
-    
+    if len(auditd_record_list) == 0:
+        print("Not Found Audit Record!")
+        return None
     audit_event_dict = {}
     for _record in auditd_record_list:
         if _record.id in audit_event_dict:
