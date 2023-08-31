@@ -2,7 +2,6 @@ import re
 import numpy as np
 import copy
 import os
-from sklearn.preprocessing import OneHotEncoder
 
 
 class AuditdRecord:
@@ -282,11 +281,14 @@ def _read_log(log_file_path):
     
     return auditd_record_list
 
-def log2graph(input_path, output_path, interval=60, overlap=30):
+def read_log(log_file_path):
+    return _read_log(log_file_path=log_file_path)
+
+def log2graph(input_path, interval=60, overlap=30):
     auditd_record_list = _read_log(input_path)
     if len(auditd_record_list) == 0:
-        print("Not Found Audit Record!")
         return None
+    
     audit_event_dict = {}
     for _record in auditd_record_list:
         if _record.id in audit_event_dict:
@@ -396,7 +398,7 @@ def log2graph(input_path, output_path, interval=60, overlap=30):
             i_event = i_event_overlap
     
     graph_timestamp_array = np.array(graph_timestamp_list)
-    print('graph_timestamp_array',graph_timestamp_array.shape)
+    # print('graph_timestamp_array',graph_timestamp_array.shape)
     # Register the node to a gobal list for hidden state transfer between time slots
     global_node_list = []
     graph_node_indices_list = []
@@ -425,7 +427,7 @@ def log2graph(input_path, output_path, interval=60, overlap=30):
     node_attr_array = np.array(node_attr_list)
     # node_attr_encoder = OneHotEncoder(sparse_output=False)
     # node_attr_array = node_attr_encoder.fit_transform(node_attr_list)
-    print('node_attr_array',node_attr_array.shape)
+    # print('node_attr_array',node_attr_array.shape)
 
 
     # Node Index
@@ -443,8 +445,8 @@ def log2graph(input_path, output_path, interval=60, overlap=30):
     node_index_array = np.array(node_index_list)
     node_flag_array = np.array(node_flag_list)
 
-    print('node_flag_array',node_flag_array.shape)
-    print('node_index_array',node_index_array.shape)
+    # print('node_flag_array',node_flag_array.shape)
+    # print('node_index_array',node_index_array.shape)
 
     # Edge
     edge_flag_array = None
@@ -468,18 +470,27 @@ def log2graph(input_path, output_path, interval=60, overlap=30):
     edge_index_array = np.array(edge_index_list)
     edge_flag_array = np.array(edge_flag_list)
 
-    print('edge_flag_array',edge_flag_array.shape)
-    print('edge_attr_array',edge_attr_array.shape)
-    print('edge_index_array',edge_index_array.shape)
+    # print('edge_flag_array',edge_flag_array.shape)
+    # print('edge_attr_array',edge_attr_array.shape)
+    # print('edge_index_array',edge_index_array.shape)
     
-    np.savez(
-        f'{output_path}.npz',
-        node_attr=node_attr_array,
-        node_flag=node_flag_array,
-        node_index=node_index_array,
-        edge_flag=edge_flag_array,
-        edge_attr=edge_attr_array,
-        edge_index=edge_index_array,
-        timestamp=graph_timestamp_array,
-        )
+    # np.savez(
+    #     f'{output_path}.npz',
+    #     node_attr=node_attr_array,
+    #     node_flag=node_flag_array,
+    #     node_index=node_index_array,
+    #     edge_flag=edge_flag_array,
+    #     edge_attr=edge_attr_array,
+    #     edge_index=edge_index_array,
+    #     timestamp=graph_timestamp_array,
+    #     )
+    return {
+        'node_attr': node_attr_array,
+        'node_flag': node_flag_array,
+        'node_index': node_index_array,
+        'edge_flag': edge_flag_array,
+        'edge_attr': edge_attr_array,
+        'edge_index': edge_index_array,
+        'timestamp': graph_timestamp_array,
+    }
         
